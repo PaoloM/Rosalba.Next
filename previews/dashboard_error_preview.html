@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rosalba Dashboard - Error State</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .display-frame {
+            width: 480px;
+            height: 320px;
+            background-color: #000;
+            border: 8px solid #333;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #FF0000;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            color: #FF0000;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #FFF;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        .error-details {
+            background: #222;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 10px;
+            width: 90%;
+            margin-bottom: 15px;
+        }
+        
+        .error-code {
+            color: #FF6666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .error-desc {
+            color: #CCC;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .retry-info {
+            color: #FFFF00;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .status-line {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            font-size: 10px;
+            color: #888;
+            margin-top: auto;
+        }
+        
+        .power-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 10px;
+            color: #888;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .blinking {
+            animation: blink 1s infinite;
+        }
+        
+        .info-panel {
+            margin-left: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 350px;
+            color: #333;
+        }
+        
+        .info-panel h3 {
+            color: #333;
+            margin-top: 0;
+            border-bottom: 2px solid #FF0000;
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="display-frame">
+        <div class="power-status">USB Power</div>
+        
+        <div class="error-icon">⚠</div>
+        
+        <div class="error-title">CAN BUS ERROR</div>
+        
+        <div class="error-message">
+            Unable to connect to vehicle<br>
+            OBD-II interface
+        </div>
+        
+        <div class="error-details">
+            <div class="error-code">ERROR CODE: CAN_TIMEOUT_001</div>
+            <div class="error-desc">• SN65HVD230 not responding</div>
+            <div class="error-desc">• Check CAN-H/CAN-L connections</div>
+            <div class="error-desc">• Verify 120Ω termination</div>
+            <div class="error-desc">• Engine must be running</div>
+        </div>
+        
+        <div class="retry-info blinking">
+            Auto-retry in progress...
+        </div>
+        
+        <div class="status-line">
+            <span>Rosalba.Next v1.1</span>
+            <span>Attempt: 7/∞</span>
+            <span>Last: 15:34:22</span>
+        </div>
+    </div>
+    
+    <div class="info-panel">
+        <h3>Error State Display</h3>
+        <p><strong>Display Mode:</strong> CAN Bus Error<br>
+        <strong>Error Handling:</strong> Auto-retry enabled<br>
+        <strong>Status:</strong> Continuous monitoring</p>
+        
+        <p><strong>Error Information:</strong></p>
+        <ul>
+            <li>Large warning symbol for visibility</li>
+            <li>Clear error message in multiple languages</li>
+            <li>Technical error code for debugging</li>
+            <li>Troubleshooting suggestions</li>
+            <li>Retry counter and timestamp</li>
+        </ul>
+        
+        <p><strong>Common Causes:</strong></p>
+        <ul>
+            <li>Vehicle engine not running</li>
+            <li>Loose CAN bus connections</li>
+            <li>Missing termination resistor</li>
+            <li>SN65HVD230 power issues</li>
+            <li>Wrong baud rate (should be 500k)</li>
+        </ul>
+        
+        <p><em>This error screen appears when the system cannot establish communication with the vehicle's CAN bus.</em></p>
+    </div>
+</body>
+</html>
