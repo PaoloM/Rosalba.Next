@@ -1,8 +1,8 @@
 // User_Setup.h for ILI9486/ILI9488 with ESP32
 // Copy this to your TFT_eSPI library folder after installation
 
-#define ILI9488_DRIVER     // Use this for ILI9488 displays
-// #define ILI9486_DRIVER  // Use this for ILI9486 displays (uncomment if using ILI9486)
+#define ILI9488_DRIVER     // Use this for ILI9488 displays (trying this first)
+// #define ILI9486_DRIVER  // Use this for ILI9486 displays (was previously enabled)
 
 #define TFT_MISO 19
 #define TFT_MOSI 23
@@ -20,9 +20,9 @@
 #define LOAD_FONT8  // Font 8. Large 75 pixel font needs ~3256 bytes in FLASH, only characters 1234567890:-.
 #define LOAD_GFXFF  // FreeFonts. Include access to the 48 Adafruit_GFX free fonts FF1 to FF48 and custom fonts
 
-// SPI frequency
-#define SPI_FREQUENCY  27000000 // 27MHz for ESP32
-// #define SPI_FREQUENCY  40000000 // Try 40MHz if 27MHz works well
+// SPI frequency - reduced for better compatibility
+#define SPI_FREQUENCY  20000000 // 20MHz for stability (was 27MHz)
+// #define SPI_FREQUENCY  40000000 // Try 40MHz if 20MHz works well
 
 // Optional reduced SPI frequency for reading TFT
-#define SPI_READ_FREQUENCY  20000000
+#define SPI_READ_FREQUENCY  16000000

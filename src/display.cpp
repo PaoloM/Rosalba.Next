@@ -13,9 +13,31 @@
 TFT_eSPI tft = TFT_eSPI();
 
 void initializeDisplay() {
+  Serial.println("Starting display initialization...");
+  
+  // Test reset pin first
+  Serial.println("Testing reset pin...");
+  pinMode(TFT_RST, OUTPUT);
+  digitalWrite(TFT_RST, LOW);
+  delay(100);
+  digitalWrite(TFT_RST, HIGH);
+  delay(100);
+  Serial.println("Reset sequence completed");
+  
   // Initialize TFT display (ILI9486/ILI9488)
+  Serial.println("Calling tft.init()...");
   tft.init();
+  
+  Serial.println("Setting rotation to landscape...");
   tft.setRotation(3); // Landscape mode (480x320)
+  
+  Serial.println("Testing basic color fill...");
+  tft.fillScreen(TFT_RED);
+  delay(500);
+  tft.fillScreen(TFT_GREEN);
+  delay(500);
+  tft.fillScreen(TFT_BLUE);
+  delay(500);
   tft.fillScreen(TFT_BLACK);
   
   Serial.println("ILI9486/ILI9488 TFT Display initialized");
@@ -299,10 +321,11 @@ void showErrorScreen(String message) {
 }
 
 void updateDisplay() {
-  tft.fillScreen(TFT_BLACK);
+  // TEMPORARY DEBUG: Force red background instead of black to verify function is called
+  tft.fillScreen(TFT_RED);
   
   // Header - Fiat 500 Abarth specific
-  tft.setTextColor(TFT_CYAN);
+  tft.setTextColor(TFT_WHITE);  // White text on red background for visibility
   tft.setTextSize(3);
   tft.setCursor(100, 10);
   tft.println("ABARTH MONITOR");
