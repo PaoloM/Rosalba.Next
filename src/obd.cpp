@@ -1,43 +1,48 @@
 #include "obd.h"
 #include "config.h"
-#include <CAN.h>
+#include <ACAN_ESP32.h>
 
 // Global vehicle data
 VehicleData vehicle;
 
 void initializeCAN() {
-  // Set CAN pins
-  CAN.setPins(CAN_RX_PIN, CAN_TX_PIN);
+  // Configure CAN settings for 500 kbps (OBD-II standard)
+  ACAN_ESP32_Settings settings(500UL * 1000UL); // 500 kbps (APB clock is auto-detected)
+  settings.mRequestedCANMode = ACAN_ESP32_Settings::NormalMode;
+  settings.mRxPin = static_cast<gpio_num_t>(CAN_RX_PIN);
+  settings.mTxPin = static_cast<gpio_num_t>(CAN_TX_PIN);
   
-  // Start CAN bus at configured speed
-  if (!CAN.begin(CAN_SPEED)) {
-    Serial.println("ERROR: Failed to initialize CAN bus!");
+  // Initialize CAN controller (accepts all frames by default)
+  const uint32_t errorCode = ACAN_ESP32::can.begin(settings);
+  
+  if (errorCode == 0) {
+    Serial.println("CAN bus initialized successfully!");
+    Serial.println("Bus speed: 500 kbps");
+    Serial.print("ESP32-S3 CAN pins - RX: GPIO");
+    Serial.print(CAN_RX_PIN);
+    Serial.print(", TX: GPIO");
+    Serial.println(CAN_TX_PIN);
+  } else {
+    Serial.print("ERROR: CAN initialization failed with code: 0x");
+    Serial.println(errorCode, HEX);
     Serial.println("Check wiring:");
-    Serial.println("- ESP32 GPIO21 (TX) -> SN65HVD230 D pin");
-    Serial.println("- ESP32 GPIO22 (RX) -> SN65HVD230 R pin");
+    Serial.println("- ESP32-S3 GPIO21 (TX) -> SN65HVD230 D pin");
+    Serial.println("- ESP32-S3 GPIO22 (RX) -> SN65HVD230 R pin");
     throw std::runtime_error("CAN initialization failed");
   }
-  
-  Serial.println("CAN bus initialized successfully!");
-  Serial.print("Bus speed: ");
-  Serial.print(CAN_SPEED / 1000);
-  Serial.println(" kbps");
 }
 
 void processCANMessages() {
   // Check for incoming CAN messages
-  int packetSize = CAN.parsePacket();
+  CANMessage frame;
   
-  if (packetSize) {
-    // Read CAN message details
-    long canId = CAN.packetId();
-    int dlc = CAN.packetDlc();
+  if (ACAN_ESP32::can.receive(frame)) {
+    // Process received CAN message
+    uint32_t canId = frame.id;
+    uint8_t dlc = frame.len;
     
-    // Read data bytes into buffer
-    uint8_t data[8];
-    for (int i = 0; i < dlc && i < 8; i++) {
-      data[i] = CAN.read();
-    }
+    // Data is already in frame.data array
+    uint8_t* data = frame.data;
     
     // Process OBD-II response messages (7E8, 7E9, 7EA, 7EB, etc.)
     if ((canId >= 0x7E8 && canId <= 0x7EF) && dlc >= 3) {
@@ -140,16 +145,27 @@ void processOBDResponse(uint8_t pid, uint8_t* data, uint8_t length) {
 }
 
 void sendOBDRequest(uint8_t pid) {
-  CAN.beginPacket(0x7DF); // Standard OBD-II request ID
-  CAN.write(0x02);        // Length
-  CAN.write(0x01);        // Mode 01 (current data)
-  CAN.write(pid);         // PID
-  CAN.write(0x00);        // Padding
-  CAN.write(0x00);
-  CAN.write(0x00);
-  CAN.write(0x00);
-  CAN.write(0x00);
-  CAN.endPacket();
+  CANMessage frame;
+  frame.id = 0x7DF;       // Standard OBD-II request ID
+  frame.len = 8;          // Always 8 bytes for OBD-II
+  frame.ext = false;      // Standard ID
+  frame.rtr = false;      // Data frame
+  
+  // Fill OBD-II request data
+  frame.data[0] = 0x02;   // Length
+  frame.data[1] = 0x01;   // Mode 01 (current data)
+  frame.data[2] = pid;    // PID
+  frame.data[3] = 0x00;   // Padding
+  frame.data[4] = 0x00;
+  frame.data[5] = 0x00;
+  frame.data[6] = 0x00;
+  frame.data[7] = 0x00;
+  
+  // Send the frame
+  const bool ok = ACAN_ESP32::can.tryToSend(frame);
+  if (!ok) {
+    Serial.println("Warning: CAN send buffer full");
+  }
 }
 
 uint8_t getCurrentPID(uint8_t index) {

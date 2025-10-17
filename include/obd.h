@@ -71,6 +71,7 @@ void processOBDResponse(uint8_t pid, uint8_t* data, uint8_t length);
 void sendOBDRequest(uint8_t pid);
 uint8_t getCurrentPID(uint8_t index);
 void processFiatCANMessage(long canId, uint8_t* data, int dlc);
+void printVehicleData();  // Print vehicle data to serial
 
 // Global vehicle data (declared in obd.cpp)
 extern VehicleData vehicle;
