@@ -7,22 +7,48 @@
 
 #include <Arduino.h>
 #include "obd.h"
+#include "display.h"
 
 void setup() {
+  // Initialize Serial with USB CDC support for ESP32-S3
   Serial.begin(115200);
-  delay(1000);
+  delay(2000); // Longer delay for USB CDC initialization
   
-  Serial.println("\n🏁 Rosalba.Next - Abarth CAN Monitor (CAN-Only)");
-  Serial.println("=================================================");
-  Serial.println("ESP32-S3 Waveshare with SN65HVD230 CAN Transceiver");
+  Serial.println("\n🏁 Rosalba.Next - Abarth CAN Monitor");
+  Serial.println("=====================================");
+  Serial.println("ESP32-S3 Waveshare 3.5B Touch Display");
   Serial.println("CAN Bus monitoring for 2015+ Fiat 500 Abarth");
-  Serial.println("Focused on turbo boost and performance data");
   Serial.println();
+
+  // Initialize display first
+  Serial.print("📺 Initializing display... ");
+  Serial.flush();
+  
+  initializeDisplay();
+  Serial.println("COMPLETE");
+  
+  // Show Abarth logo
+  Serial.println("🦂 Showing Abarth logo...");
+  showAbarthLogo();
+  
+  // Show startup screen
+  Serial.println("🚀 Loading startup screen...");
+  showStartupScreen();
 
   // Initialize CAN bus communication  
   Serial.print("🚗 Initializing CAN bus... ");
-  initializeCAN();
-  Serial.println("✓ CAN bus ready");
+  displayConnectionStatus(false); // Show disconnected status
+  
+  try {
+    initializeCAN();
+    Serial.println("✓ CAN bus ready");
+    displayConnectionStatus(true); // Show connected status
+  } catch (const std::exception& e) {
+    Serial.print("❌ CAN initialization failed: ");
+    Serial.println(e.what());
+    Serial.println("Continuing without CAN...");
+    displayConnectionStatus(false);
+  }
 
   Serial.println("🚀 System ready - monitoring Abarth turbo data");
   Serial.println("Connect CAN transceiver to vehicle OBD-II port");
@@ -38,17 +64,24 @@ void setup() {
 }
 
 void loop() {
-  static unsigned long lastUpdate = 0;
+  static unsigned long lastSerialUpdate = 0;
+  static unsigned long lastDisplayUpdate = 0;
   static unsigned long lastStatus = 0;
   unsigned long currentTime = millis();
   
   // Process CAN messages continuously
   processCANMessages();
   
-  // Print vehicle data every 500ms
-  if (currentTime - lastUpdate >= 500) {
+  // Update display every 150ms (smooth for boost readings)
+  if (currentTime - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
+    displayVehicleData(vehicle);
+    lastDisplayUpdate = currentTime;
+  }
+  
+  // Print vehicle data to serial every 500ms
+  if (currentTime - lastSerialUpdate >= SERIAL_UPDATE_INTERVAL) {
     printVehicleData();
-    lastUpdate = currentTime;
+    lastSerialUpdate = currentTime;
   }
   
   // Print status every 10 seconds

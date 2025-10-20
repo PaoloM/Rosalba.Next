@@ -26,8 +26,12 @@ void initializeCAN() {
     Serial.print("ERROR: CAN initialization failed with code: 0x");
     Serial.println(errorCode, HEX);
     Serial.println("Check wiring:");
-    Serial.println("- ESP32-S3 GPIO21 (TX) -> SN65HVD230 D pin");
-    Serial.println("- ESP32-S3 GPIO22 (RX) -> SN65HVD230 R pin");
+    Serial.print("- ESP32-S3 GPIO");
+    Serial.print(CAN_TX_PIN);
+    Serial.println(" (TX) -> SN65HVD230 D pin");
+    Serial.print("- ESP32-S3 GPIO");
+    Serial.print(CAN_RX_PIN);
+    Serial.println(" (RX) -> SN65HVD230 R pin");
     throw std::runtime_error("CAN initialization failed");
   }
 }
