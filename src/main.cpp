@@ -6,8 +6,8 @@
  */
 
 #include <Arduino.h>
+#include "config.h"
 #include "obd.h"
-#include "display.h"
 
 void setup() {
   // Initialize Serial with USB CDC support for ESP32-S3
@@ -16,38 +16,20 @@ void setup() {
   
   Serial.println("\n🏁 Rosalba.Next - Abarth CAN Monitor");
   Serial.println("=====================================");
-  Serial.println("ESP32-S3 Waveshare 3.5B Touch Display");
+  Serial.println("ESP32-S3 CAN Bus monitoring");
   Serial.println("CAN Bus monitoring for 2015+ Fiat 500 Abarth");
   Serial.println();
 
-  // Initialize display first
-  Serial.print("📺 Initializing display... ");
-  Serial.flush();
-  
-  initializeDisplay();
-  Serial.println("COMPLETE");
-  
-  // Show Abarth logo
-  Serial.println("🦂 Showing Abarth logo...");
-  showAbarthLogo();
-  
-  // Show startup screen
-  Serial.println("🚀 Loading startup screen...");
-  showStartupScreen();
-
   // Initialize CAN bus communication  
   Serial.print("🚗 Initializing CAN bus... ");
-  displayConnectionStatus(false); // Show disconnected status
   
   try {
     initializeCAN();
     Serial.println("✓ CAN bus ready");
-    displayConnectionStatus(true); // Show connected status
   } catch (const std::exception& e) {
     Serial.print("❌ CAN initialization failed: ");
     Serial.println(e.what());
     Serial.println("Continuing without CAN...");
-    displayConnectionStatus(false);
   }
 
   Serial.println("🚀 System ready - monitoring Abarth turbo data");
@@ -65,18 +47,11 @@ void setup() {
 
 void loop() {
   static unsigned long lastSerialUpdate = 0;
-  static unsigned long lastDisplayUpdate = 0;
   static unsigned long lastStatus = 0;
   unsigned long currentTime = millis();
   
   // Process CAN messages continuously
   processCANMessages();
-  
-  // Update display every 150ms (smooth for boost readings)
-  if (currentTime - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
-    displayVehicleData(vehicle);
-    lastDisplayUpdate = currentTime;
-  }
   
   // Print vehicle data to serial every 500ms
   if (currentTime - lastSerialUpdate >= SERIAL_UPDATE_INTERVAL) {

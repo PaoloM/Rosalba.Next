@@ -14,15 +14,3 @@
 #define ENABLE_FIAT_PIDS true         // Enable Fiat-specific PID requests
 #define ENABLE_DIRECT_CAN true        // Enable direct CAN message monitoring
 #define BOOST_SENSOR_HYDRAULIC true   // Use hydraulic boost sensor for accurate readings
-
-// Display configuration for integrated Waveshare ESP32-S3
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 320
-#define DISPLAY_UPDATE_INTERVAL 150   // Display refresh rate (ms)
-
-// Abarth brand colors (RGB565 format)
-#define ABARTH_RED    0xF800    // Bright red
-#define ABARTH_WHITE  0xFFFF    // White
-#define ABARTH_BLACK  0x0000    // Black
-#define ABARTH_GRAY   0x8410    // Gray
-#define ABARTH_GREEN  0x07E0    // Green for boost readings
