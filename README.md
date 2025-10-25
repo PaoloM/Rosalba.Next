@@ -106,9 +106,7 @@ pio device monitor
 
 ## Files Structure
 
-- `src/main.cpp` - Main application (CAN-only)
-- `src/obd.cpp` - CAN bus communication and OBD-II protocol
-- `include/obd.h` - Vehicle data structures and function declarations
+- `src/main.cpp` - Main application
 - `include/config.h` - Hardware pin configuration and timing parameters
 - `platformio.ini` - Build configuration for ESP32 (Freenove FNK0103S)
 
@@ -118,21 +116,5 @@ MIT License - see LICENSE file for details.
 
 ## Important Notes
 
-### Pin Usage
-- **UART0 pins (GPIO1/GPIO3)** are used for CAN communication
-- **USB-to-serial** handles Serial Monitor (no conflict with CAN)
-- **RGB LED pins (GPIO16/17/22)** remain fully functional
-- **GPIO35/39** available for future expansion (input-only)
-
-### CAN Communication
-- **Bidirectional**: Can both send OBD-II requests and receive responses
-- **Fiat-specific**: Optimized for 500 Abarth turbo monitoring
-- **Real-time**: 300ms request interval for responsive boost monitoring
 
 ## Version Notes
-
-This is a **minimal CAN-only version** focused purely on data acquisition and serial monitoring. Perfect for:
-- Data logging applications
-- Custom dashboard development
-- Performance tuning and analysis
-- Integration with other systems
