@@ -10,13 +10,13 @@
 #include "obd.h"
 
 void setup() {
-  // Initialize Serial with USB CDC support for ESP32-S3
+  // Initialize Serial - USB-to-serial chip handles communication (not UART0 pins)
   Serial.begin(115200);
-  delay(2000); // Longer delay for USB CDC initialization
+  delay(1000); // Allow serial to initialize
   
   Serial.println("\n🏁 Rosalba.Next - Abarth CAN Monitor");
   Serial.println("=====================================");
-  Serial.println("ESP32-S3 CAN Bus monitoring");
+  Serial.println("ESP32 CAN Bus monitoring");
   Serial.println("CAN Bus monitoring for 2015+ Fiat 500 Abarth");
   Serial.println();
 

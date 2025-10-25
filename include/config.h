@@ -1,9 +1,10 @@
 #pragma once
 
-// CAN bus configuration for ESP32-S3 with SN65HVD230 transceiver
-#define CAN_TX_PIN 17  // ESP32-S3 CAN TX to SN65HVD230 D pin
-#define CAN_RX_PIN 18  // ESP32-S3 CAN RX to SN65HVD230 R pin
-// Note: CAN speed (500kbps) is configured in ACAN_ESP32_Settings
+// CAN bus configuration for Freenove FNK0103S with SN65HVD230 transceiver
+#define CAN_TX_PIN 1   // ESP32 CAN TX to SN65HVD230 D pin (TXD0 - UART0 TX)
+#define CAN_RX_PIN 3   // ESP32 CAN RX to SN65HVD230 R pin (RXD0 - UART0 RX) 
+// Note: CAN speed (500kbps) is configured in CAN.begin()
+// Note: Using UART0 pins - keeps RGB LED (GPIO16,17,22) fully functional
 
 // Timing configuration - Optimized for Fiat 500 Abarth turbo monitoring
 #define OBD_REQUEST_INTERVAL 300      // OBD-II request frequency (ms) - fast for boost response

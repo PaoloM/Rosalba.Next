@@ -1,10 +1,10 @@
 # Rosalba.Next - Fiat 500 Abarth CAN Monitor
 
-A minimal ESP32-S3 based CAN bus monitor specialized for 2015+ Fiat 500 Abarth turbo performance monitoring.
+A minimal ESP32 based CAN bus monitor specialized for 2015+ Fiat 500 Abarth turbo performance monitoring.
 
 ## Hardware
 
-- **Waveshare ESP32-S3 3.5" Capacitive Touch Display**
+- **Freenove FNK0103S ESP32 Development Board**
 - **SN65HVD230 CAN Transceiver** (for OBD-II connection)
 - **External 5V power supply** (recommended for CAN transceiver)
 
@@ -23,12 +23,25 @@ A minimal ESP32-S3 based CAN bus monitor specialized for 2015+ Fiat 500 Abarth t
 
 ## CAN Bus Connection
 
-Connect SN65HVD230 CAN transceiver to vehicle OBD-II port:
-- **CAN_RX** → ESP32-S3 GPIO (configured in obd.cpp)
-- **CAN_TX** → ESP32-S3 GPIO (configured in obd.cpp)
-- **5V** → External power supply
-- **GND** → Common ground
-- **CANH/CANL** → OBD-II pins 6/14
+### Freenove FNK0103S to SN65HVD230 CAN Transceiver Wiring:
+- **GPIO1 (TXD0)** → SN65HVD230 **D pin** (CAN TX)
+- **GPIO3 (RXD0)** → SN65HVD230 **R pin** (CAN RX)
+- **3.3V** → SN65HVD230 **VCC**
+- **GND** → SN65HVD230 **GND**
+
+### SN65HVD230 to Vehicle OBD-II Connection:
+- **CANH** → OBD-II **Pin 6** (CAN High)
+- **CANL** → OBD-II **Pin 14** (CAN Low)
+- **GND** → OBD-II **Pin 4/5** (Vehicle Ground)
+
+### USB Communication:
+- **USB Cable** → PC for Serial Monitor debugging (115200 baud)
+- Uses onboard USB-to-serial chip (no conflict with CAN pins)
+
+### RGB LED (Optional Status Indicator):
+- **GPIO16** → Blue LED (or repurpose for other functions)
+- **GPIO17** → Green LED  
+- **GPIO22** → Red LED
 
 ## Building
 
@@ -79,24 +92,47 @@ pio device monitor
 ⏱️  Last Update: 0.1s ago
 ```
 
+## Software Configuration
+
+### CAN Library
+- **sandeepmistry/CAN** v0.3.1 (compatible with ESP32)
+- **CAN Speed**: 500 kbps (OBD-II standard)
+- **Pin Configuration**: GPIO1 (TX), GPIO3 (RX)
+
+### Build Environment
+- **Board**: `esp32dev` (compatible with Freenove FNK0103S)
+- **Framework**: Arduino
+- **Monitor Speed**: 115200 baud
+
 ## Files Structure
 
 - `src/main.cpp` - Main application (CAN-only)
 - `src/obd.cpp` - CAN bus communication and OBD-II protocol
 - `include/obd.h` - Vehicle data structures and function declarations
-- `include/config.h` - Configuration parameters
-- `platformio.ini` - Build configuration for ESP32-S3
+- `include/config.h` - Hardware pin configuration and timing parameters
+- `platformio.ini` - Build configuration for ESP32 (Freenove FNK0103S)
 
 ## License
 
 MIT License - see LICENSE file for details.
 
-## Notes
+## Important Notes
+
+### Pin Usage
+- **UART0 pins (GPIO1/GPIO3)** are used for CAN communication
+- **USB-to-serial** handles Serial Monitor (no conflict with CAN)
+- **RGB LED pins (GPIO16/17/22)** remain fully functional
+- **GPIO35/39** available for future expansion (input-only)
+
+### CAN Communication
+- **Bidirectional**: Can both send OBD-II requests and receive responses
+- **Fiat-specific**: Optimized for 500 Abarth turbo monitoring
+- **Real-time**: 300ms request interval for responsive boost monitoring
+
+## Version Notes
 
 This is a **minimal CAN-only version** focused purely on data acquisition and serial monitoring. Perfect for:
 - Data logging applications
 - Custom dashboard development
 - Performance tuning and analysis
 - Integration with other systems
-
-The Waveshare ESP32-S3 display can be used for future GUI development, but this version focuses on reliable CAN communication first.

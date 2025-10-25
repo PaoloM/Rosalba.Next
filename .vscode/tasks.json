@@ -165,6 +165,17 @@
 				"$platformio"
 			],
 			"group": "build"
+		},
+		{
+			"label": "PlatformIO Build",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"-e",
+				"freenove-FNK0103S"
+			],
+			"group": "build"
 		}
 	]
 }
