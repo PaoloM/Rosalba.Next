@@ -26,7 +26,7 @@ TFT_Touch touch = TFT_Touch(DCS, DCLK, DIN, DOUT);
 static const uint16_t screenWidth = TFT_SCREEN_WIDTH;
 static const uint16_t screenHeight = TFT_SCREEN_HEIGHT;
 static const uint16_t screenHeightBuf = TFT_SCREEN_HEIGHT / 10;
-static lv_disp_draw_buf_t draw_buf;
+static lv_draw_buf_t draw_buf;
 static lv_color_t draw_buf1[screenWidth * screenHeightBuf];
 //static lv_color_t draw_buf2[screenWidth * screenHeightBuf];
 
@@ -41,18 +41,18 @@ void my_print(const char *buf) {
 #endif
 
 /* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
+void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
   tft.startWrite();
   tft.setAddrWindow(area->x1, area->y1, w, h);
-  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
+  tft.pushColors((uint16_t *)px_map, w * h, true);
   tft.endWrite();
-  lv_disp_flush_ready(disp);
+  lv_display_flush_ready(disp);
 }
 
 /*Read the touchpad*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
+void my_touchpad_read(lv_indev_t *indev_driver, lv_indev_data_t *data) {
   uint16_t touchX, touchY;
   bool touched;
 #if defined(FNK0103B_2P8_240x320_ST7789) || defined(FNK0103F_2P8_240x320_ILI9341)
@@ -144,39 +144,31 @@ void Display::init(void) {
 #endif
 
 #if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print); /* register print function for debugging */
+  // Note: LVGL v9.x log callback signature changed
+  // lv_log_register_print_cb(my_print); /* register print function for debugging */
 #endif
   tft.begin();                    /* TFT init */
   tft.setRotation(TFT_DIRECTION); /* Landscape orientation, flipped */
 
   lv_init();
-  //lv_disp_draw_buf_init(&draw_buf, draw_buf1, draw_buf2, screenWidth * screenHeightBuf);
-  lv_disp_draw_buf_init(&draw_buf, draw_buf1, NULL, screenWidth * screenHeightBuf);
-
+  
   /*Initialize the display*/
-  static lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-  /*Change the following line to your display resolution*/
+  lv_display_t *display;
 #if (TFT_DIRECTION % 2 == 0)
-  disp_drv.hor_res = screenWidth;
-  disp_drv.ver_res = screenHeight;
+  display = lv_display_create(screenWidth, screenHeight);
 #else
-  disp_drv.hor_res = screenHeight;
-  disp_drv.ver_res = screenWidth;
+  display = lv_display_create(screenHeight, screenWidth);
 #endif
+  
+  lv_display_set_flush_cb(display, my_disp_flush);
+  lv_display_set_buffers(display, draw_buf1, NULL, sizeof(draw_buf1), LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.draw_buf = &draw_buf;
-  lv_disp_drv_register(&disp_drv);
-
-  /*Initialize the (dummy) input device driver*/
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = my_touchpad_read;
-  lv_indev_drv_register(&indev_drv);
+  /*Initialize the input device*/
+  lv_indev_t *indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, my_touchpad_read);
 }
 
 void Display::routine(void) {
-  lv_task_handler();
+  lv_timer_handler();
 }
