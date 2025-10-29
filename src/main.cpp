@@ -1,6 +1,8 @@
 #include "display.h"
 #include "driver_sdspi.h"
 #include "main_ui.h"
+// Test: Add screen manager header back
+#include "screen_manager.h"
 
 #define SD_SCK   18
 #define SD_MISO  19
@@ -16,17 +18,25 @@ void setup() {
     delay(10);
   }
 
+  Serial.println("=== EMERGENCY RESTORE ===");
+  Serial.println("Reverting to known working configuration");
+
   /*** Init drivers ***/
   sdspi_init(SD_SCK, SD_MISO, SD_MOSI, SD_CS);       //Initialize the SD module
+  Serial.println("SD card initialized");
 
   screen.init();
+  Serial.println("Display initialized");
 
+  // Use original working UI approach
   setup_scr_main(&guider_main_ui);
   lv_screen_load(guider_main_ui.main);
+  Serial.println("Original working UI loaded");
 
+  Serial.println("=== DISPLAY SHOULD BE WORKING NOW ===");
 }
 
 void loop() {
-  screen.routine(); /* Let the GUI do its work */  // Handle routine display tasks
-  delay(5);                                        // Add a small delay to prevent the loop from running too fast
+  screen.routine(); /* Let the GUI do its work */  
+  delay(5);         /* Small delay to prevent excessive CPU usage */
 }

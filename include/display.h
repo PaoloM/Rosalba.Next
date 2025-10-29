@@ -6,9 +6,7 @@
 
 #include <TFT_eSPI.h> // TFT display library
 
-
 #define TFT_DIRECTION 3   //Select TFT Direction (0 - 3)
-
 
 class Display
 {

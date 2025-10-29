@@ -2,178 +2,50 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "PlatformIO: Build and Upload",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Fixed Code",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload HX8357 Test",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Clean HX8357",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Universal Tester",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Fixed Universal Tester",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Voltage Fix",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Parallel Display",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Write-Only Parallel",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload Fixed Parallel",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "Upload CAN-Only Version",
-			"type": "shell",
-			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
-			"args": [
-				"run",
-				"--target",
-				"upload"
-			],
-			"isBackground": false,
-			"problemMatcher": [
-				"$platformio"
-			],
-			"group": "build"
-		},
-		{
-			"label": "PlatformIO Build",
+			"label": "PlatformIO: Build",
 			"type": "shell",
 			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
 			"args": [
 				"run",
 				"-e",
-				"freenove-FNK0103S"
+				"esp32-blank"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$platformio"
+			],
+			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Build and Upload",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"-e",
+				"esp32-blank",
+				"--target",
+				"upload"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$platformio"
+			],
+			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Monitor",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"device",
+				"monitor",
+				"-e",
+				"esp32-blank"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$platformio"
 			],
 			"group": "build"
 		}

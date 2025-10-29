@@ -1,0 +1,15 @@
+# Abarth Logo Placeholder
+
+This file represents where the abarth_logo.bmp should be placed.
+
+The actual BMP file should be:
+- Format: 24-bit BMP
+- Recommended size: 200x200 pixels or smaller
+- Optimized for the display resolution (320x480)
+
+To add the real logo:
+1. Convert your Abarth logo to BMP format
+2. Resize to appropriate dimensions
+3. Replace this file with the actual abarth_logo.bmp
+
+The screen manager will automatically load this image during splash screen initialization.
