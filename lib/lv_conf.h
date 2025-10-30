@@ -242,6 +242,29 @@ typedef void * lv_font_user_data_t;
 /** 1: Support using images as font in label or span widgets */
 #define LV_USE_IMGFONT 0
 
+/*==================
+ * IMAGE DECODERS
+ *==================*/
+
+/** PNG decoder library */
+#define LV_USE_PNG 1
+
+/** BMP decoder library */
+#define LV_USE_BMP 1
+
+/** JPG + split JPG decoder library.
+ * Split JPG is a custom format optimized for embedded systems. */
+#define LV_USE_SJPG 0
+
+/** GIF decoder library */
+#define LV_USE_GIF 0
+
+/** QR code library */
+#define LV_USE_QRCODE 0
+
+/** Barcode code library */
+#define LV_USE_BARCODE 0
+
 /** 1: Enable a published subscriber based messaging system */
 #define LV_USE_MSG 0
 
