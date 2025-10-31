@@ -48,6 +48,21 @@
 #define LV_DPI_DEF 130     /*[px/inch]*/
 
 /*====================
+   LVGL FILE SYSTEM SETTINGS
+ *====================*/
+
+#define LV_USE_FS_LITTLEFS 0
+#define LV_USE_FS_ARDUINO_ESP_LITTLEFS 1
+#define LV_FS_ARDUINO_ESP_LITTLEFS_LETTER 'L'
+#define LV_FS_ARDUINO_ESP_LITTLEFS_PATH ""
+/*====================
+   LVGL FILE SYSTEM SETTINGS
+ *====================*/
+
+#define LV_USE_FS_ARDUINO_SD 1
+#define LV_FS_ARDUINO_SD_LETTER 'S'
+#define LV_FS_ARDUINO_SD_PATH ""
+/*====================
    FEATURE CONFIGURATION
  *====================*/
 

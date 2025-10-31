@@ -231,7 +231,7 @@ void setup_scr_main(lv_ui *ui) {
     Serial.println("Loading PNG logo...");
     
     // Try to load PNG file
-    if (load_png_from_sd("/data/abarth_logo.png", ui->main)) {
+    if (load_png_from_sd("L:/abarth_logo.png", ui->main)) {
         Serial.println("Abarth PNG logo loaded successfully!");
         
         // Add a subtle label below the image
