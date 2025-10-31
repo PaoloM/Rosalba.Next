@@ -48,6 +48,54 @@
 				"$platformio"
 			],
 			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Upload File System Image",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"--target",
+				"uploadfs"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Upload File System Image (Retry)",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"--target",
+				"uploadfs"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Upload Firmware",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"--target",
+				"upload"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "PlatformIO: Upload File System Image",
+			"type": "shell",
+			"command": "C:\\Users\\pmarc\\.platformio\\penv\\Scripts\\platformio.exe",
+			"args": [
+				"run",
+				"--target",
+				"uploadfs"
+			],
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }

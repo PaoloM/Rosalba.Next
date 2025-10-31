@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen>
+  <label id="title" x="20" y="20" text="Hello, Rosalba!" font="montserrat_28" color="#FFFFFF" />
+  <image id="logo" x="60" y="60" src="/abarth_logo.png" />
+</screen>

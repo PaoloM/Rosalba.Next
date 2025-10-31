@@ -3,7 +3,9 @@
 #include "main_ui.h"
 #include <LittleFS.h>
 
+
 Display screen;  // Create an instance of the Display class
+lv_ui guider_main_ui; // Global UI instance for LVGL
 
 void setup() {
   /* Prepare for possible serial debug */
