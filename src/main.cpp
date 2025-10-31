@@ -2,11 +2,6 @@
 #include "driver_sdspi.h"
 #include "main_ui.h"
 
-#define SD_SCK   18
-#define SD_MISO  19
-#define SD_MOSI  23
-#define SD_CS    5
-
 Display screen;  // Create an instance of the Display class
 
 void setup() {
@@ -19,8 +14,6 @@ void setup() {
   Serial.println("=== ROSALBA.NEXT SIMPLE DISPLAY ===");
 
   /*** Init drivers ***/
-  sdspi_init(SD_SCK, SD_MISO, SD_MOSI, SD_CS);       //Initialize the SD module
-  Serial.println("SD card initialized");
 
   screen.init(); 
   Serial.println("Display initialized");
