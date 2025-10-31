@@ -13,7 +13,7 @@ void setup_scr_main(lv_ui *ui) {
     
     // Create title label
     lv_obj_t *title_label = lv_label_create(ui->main);
-    lv_label_set_text(title_label, "ROSALBA.NEXT");
+    lv_label_set_text(title_label, "ROSALBA.NEXT on Celedyr");
     lv_obj_set_style_text_color(title_label, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(title_label, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_align(title_label, LV_ALIGN_TOP_MID, 0, 20);

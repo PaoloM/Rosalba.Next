@@ -1,6 +1,7 @@
 #include "display.h"
 #include "driver_sdspi.h"
 #include "main_ui.h"
+#include <LittleFS.h>
 
 Display screen;  // Create an instance of the Display class
 
@@ -17,6 +18,19 @@ void setup() {
 
   screen.init(); 
   Serial.println("Display initialized");
+
+  Serial.print("Mounting LittleFS... ");
+  static bool littlefs_mounted = false;
+  if (!littlefs_mounted) {
+    if (!LittleFS.begin()) {
+      Serial.println("FAILED");
+    } else {
+      Serial.println("OK");
+      littlefs_mounted = true;
+    }
+  } else {
+    Serial.println("ALREADY MOUNTED");
+  }
 
   // Use the simple, working UI
   setup_scr_main(&guider_main_ui);

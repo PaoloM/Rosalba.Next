@@ -296,6 +296,12 @@ typedef void * lv_font_user_data_t;
 /** Enable the examples to be built with the library */
 #define LV_BUILD_EXAMPLES 0
 
+/** Enable LVGL LittleFS support for ESP32 */
+#define LV_USE_FS_LITTLEFS 0
+#define LV_USE_FS_ARDUINO_ESP_LITTLEFS 1
+#define LV_FS_ARDUINO_ESP_LITTLEFS_LETTER 'L'
+#define LV_FS_ARDUINO_ESP_LITTLEFS_PATH ""
+
 /*--END OF LV_CONF_H--*/
 
 #endif /*LV_CONF_H*/
