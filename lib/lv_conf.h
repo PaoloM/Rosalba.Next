@@ -66,11 +66,11 @@
 #define LV_LOG_LEVEL LV_LOG_LEVEL_WARN
 
 /** 1: Print the log with 'printf'; 0: User need to register a callback with `lv_log_register_print_cb()` */
-#define LV_LOG_PRINTF 0
+#define LV_LOG_PRINTF 1
 
 /** Enable/disable LV_LOG_TRACE in modules that produces a huge number of logs */
 #define LV_LOG_TRACE_MEM        1
-#define LV_LOG_TRACE_TIMER      1
+#define LV_LOG_TRACE_TIMER      0
 #define LV_LOG_TRACE_INDEV      1
 #define LV_LOG_TRACE_DISP_REFR  1
 #define LV_LOG_TRACE_EVENT      1

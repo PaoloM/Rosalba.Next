@@ -34,6 +34,7 @@ void setup() {
     Serial.println("ALREADY MOUNTED");
   }
 
+
   // Use the simple, working UI
   setup_scr_main(&guider_main_ui);
   lv_screen_load(guider_main_ui.main);
