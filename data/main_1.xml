@@ -1,0 +1,10 @@
+<screen>
+  <label id="title" x="center" y="20" text="Vehicle Dashboard" font="montserrat_28" color="#FF8000" />
+  <label id="rpm" x="center" y="60" text="Engine RPM: 4,200" font="montserrat_24" color="#FFFF00" />
+  <bar id="rpm_bar" x="center" y="90" w="200" h="20" min="0" max="7000" value="4200" color="#FFFF00" />
+  <label id="gear" x="60" y="130" text="Gear: 3" font="montserrat_20" color="#00FF00" />
+  <label id="oil_temp" x="60" y="170" text="Oil Temp: 98°C" font="montserrat_18" color="#FF8000" />
+  <label id="water_temp" x="220" y="170" text="Water Temp: 92°C" font="montserrat_18" color="#00BFFF" />
+  <label id="turbo" x="center" y="210" text="Turbo: 1.2 bar" font="montserrat_20" color="#00FFFF" />
+  <label id="boost" x="center" y="250" text="Boost Temp: 65°C" font="montserrat_18" color="#FF80FF" />
+</screen>

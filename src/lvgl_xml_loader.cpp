@@ -7,6 +7,9 @@
 using namespace tinyxml2;
 
 void load_screen_from_xml(const char* xml_path, lv_obj_t* parent) {
+    // Set background color to black
+    lv_obj_set_style_bg_color(parent, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
+
     File file = LittleFS.open(xml_path, "r");
     if (!file) {
         Serial.println("Failed to open XML file");
