@@ -1,3 +1,8 @@
+// Needed for lv_obj_t
+#include <lvgl.h>
+#include <map>
+#include <string>
+extern std::map<std::string, lv_obj_t*> widget_map;
 #pragma once
 #include <lvgl.h>
 

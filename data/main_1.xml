@@ -1,11 +1,23 @@
 <screen>
-<!-- lines -->
-    <line x1="0" y1="30" x2="479" y2="30" color="#999999" width="2" />
+<!-- graphic primitives (static) -->
+    <line x1="0" y1="30" x2="240" y2="30" color="#aaaaaa" width="2"/>
+    <line x1="240" y1="30" x2="480" y2="30" color="#aaaaaa" width="2"/>
 
-<!-- labels -->
-    <label id="title" x="10" y="300" text="Rosalba.Next v1.0" font="Montserrat_20" color="#FF8000" />
-    <label id="rpm" x="center" y="70" width="480" text="4200" font="Montserrat_48" color="#FFFF00" />
+<!-- labels (static) -->
+    <!-- lower status bar -->
+    <label x="10" y="300" text="Rosalba.Next v" font="Montserrat_14" color="#999999" />
+    <label x="160" y="300" text="Mode:" font="Montserrat_14" color="#999999" />
+    <label x="300" y="300" text="CAN:" font="Montserrat_14" color="#999999" />
 
-<!-- data -->
+    <label x="center" y="35" width="480" text="RPM" font="Montserrat_24" color="#999900" />
+
+<!-- data (dynamic, requires 'id') -->
+    <!-- lower status bar -->
+    <label id="version" x="120" y="300" text="-.-" font="Montserrat_14" color="#aaaaaa" />
+    <label id="mode" x="210" y="300" text="------" font="Montserrat_14" color="#aaaaaa" />
+    <label id="can" x="340" y="300" text="-" font="Montserrat_14" color="#ffffff" />
+
+
+    <label id="rpm" x="center" y="70" width="480" text="-----" font="Montserrat_48" color="#FFFFff" />
 
 </screen>

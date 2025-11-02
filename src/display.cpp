@@ -147,6 +147,6 @@ void Display::init(void) {
   Serial.println("Display initialization complete");
 }
 
-void Display::routine(void) {
-  lv_timer_handler();
-}
+// void Display::routine(void) {
+//   lv_timer_handler();
+// }

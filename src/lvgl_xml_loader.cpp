@@ -58,21 +58,21 @@ void create_line(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
     int y2 = elem->IntAttribute("y2", 0);
     const char *color = elem->Attribute("color");
     int width = elem->IntAttribute("width", 2);
-    int min_x = std::min(x1, x2);
-    int min_y = std::min(y1, y2);
-    int max_x = std::max(x1, x2);
-    int max_y = std::max(y1, y2);
     lv_obj_t *line = lv_line_create(parent);
-    lv_point_precise_t points[2] = {{x1 - min_x, y1 - min_y}, {x2 - min_x, y2 - min_y}};
+    lv_point_precise_t points[2] = {{0, 0}, {x2 - x1, y2 - y1}};
     lv_line_set_points(line, points, 2);
-    int w = max_x - min_x;
-    int h = max_y - min_y;
-    if (w < 1)
-        w = 1;
-    if (h < 1)
-        h = 1;
+    int w = std::max(abs(x2 - x1), 1);
+    int h = std::max(abs(y2 - y1), 1);
+    // For horizontal lines, ensure height is at least line width
+    if (y1 == y2) {
+        h = std::max(h, width);
+    }
+    // For vertical lines, ensure width is at least line width
+    if (x1 == x2) {
+        w = std::max(w, width);
+    }
     lv_obj_set_size(line, w, h);
-    lv_obj_set_pos(line, min_x, min_y);
+    lv_obj_set_pos(line, x1, y1);
     if (color)
     {
         uint32_t col = (uint32_t)strtol(color + 1, NULL, 16); // skip '#'
@@ -85,7 +85,8 @@ void create_line(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 
 void create_label(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
-    const char *lv_obj_center = elem->Attribute("x");
+    const char *center_x = elem->Attribute("x");
+    const char *center_y = elem->Attribute("y");
     int x = elem->IntAttribute("x", 0);
     int y = elem->IntAttribute("y", 0);
     int w = elem->IntAttribute("width", 0);
@@ -100,7 +101,11 @@ void create_label(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
         lv_obj_set_width(label, w);
     if (h)
         lv_obj_set_height(label, h);
-    if (strcmp(lv_obj_center, "center") == 0)
+    if (strcmp(center_x, "center") == 0)
+    {
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    if (strcmp(center_y, "center") == 0)
     {
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     }
@@ -111,18 +116,20 @@ void create_label(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
     }
     if (font)
     {
+        if (strcmp(font, "Montserrat_12") == 0)
+            lv_obj_set_style_text_font(label, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (strcmp(font, "Montserrat_14") == 0)
+            lv_obj_set_style_text_font(label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (strcmp(font, "Montserrat_16") == 0)
+            lv_obj_set_style_text_font(label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (strcmp(font, "Montserrat_20") == 0)
+            lv_obj_set_style_text_font(label, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
         if (strcmp(font, "Montserrat_24") == 0)
-        {
             lv_obj_set_style_text_font(label, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
         if (strcmp(font, "Montserrat_32") == 0)
-        {
             lv_obj_set_style_text_font(label, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
         if (strcmp(font, "Montserrat_48") == 0)
-        {
             lv_obj_set_style_text_font(label, &lv_font_montserrat_48, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
     }
     if (id)
         widget_map[id] = label;
