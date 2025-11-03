@@ -2,7 +2,7 @@
 #include "config.h"
 #include "driver_sdspi.h"
 #include <LittleFS.h>
-#include "lvgl_xml_loader.h"
+#include "lvgl_xml_screens.h"
 #include "Arduino.h"
 #include <map>
 #include <string>

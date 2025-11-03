@@ -1,0 +1,270 @@
+
+#include "lvgl_xml_loader.h"
+#include "lvgl.h"
+#include <cstring>
+#include <algorithm>
+#include <LittleFS.h>
+#include <Arduino.h>
+#include <map>
+#include <string>
+
+#include <tinyxml2.h>
+using namespace tinyxml2;
+
+// Global widget map for data binding
+std::map<std::string, lv_obj_t*> widget_map;
+
+// Helper: parse color string like #RRGGBB
+static lv_color_t parse_color(const char* color) {
+    if (!color || strlen(color) != 7 || color[0] != '#') return lv_color_black();
+    uint32_t col = (uint32_t)strtol(color + 1, NULL, 16);
+    return lv_color_hex(col);
+}
+
+// Common helper for position and size
+// Helper to parse int or percentage
+static int parse_int_or_percent(const char* value, int parent_size) {
+    if (!value) return 0;
+    size_t len = strlen(value);
+    if (len > 1 && value[len-1] == '%') {
+        int percent = atoi(value);
+        return (parent_size * percent) / 100;
+    }
+    return atoi(value);
+}
+
+static void set_widget_pos_and_size(lv_obj_t* obj, tinyxml2::XMLElement* elem, int parent_w, int parent_h, int content_w, int content_h) {
+    // Position
+    int x = 0, y = 0;
+    const char* x_attr = elem->Attribute("x");
+    const char* y_attr = elem->Attribute("y");
+    const char* align = elem->Attribute("align");
+    const char* valign = elem->Attribute("valign");
+    if (x_attr) {
+        if (strcmp(x_attr, "center") == 0) x = std::max(0, (parent_w - content_w) / 2);
+        else if (strcmp(x_attr, "right") == 0) x = std::max(0, parent_w - content_w);
+        else x = parse_int_or_percent(x_attr, parent_w);
+    } else if (align) {
+        if (strcmp(align, "center") == 0) x = std::max(0, (parent_w - content_w) / 2);
+        else if (strcmp(align, "right") == 0) x = std::max(0, parent_w - content_w);
+    }
+    if (y_attr) {
+        if (strcmp(y_attr, "center") == 0) y = std::max(0, (parent_h - content_h) / 2);
+        else if (strcmp(y_attr, "bottom") == 0) y = std::max(0, parent_h - content_h);
+        else y = parse_int_or_percent(y_attr, parent_h);
+    } else if (valign) {
+        if (strcmp(valign, "center") == 0) y = std::max(0, (parent_h - content_h) / 2);
+        else if (strcmp(valign, "bottom") == 0) y = std::max(0, parent_h - content_h);
+    }
+    lv_obj_set_pos(obj, x, y);
+    // Size
+    int w = 0, h = 0;
+    const char* w_attr = elem->Attribute("width");
+    const char* h_attr = elem->Attribute("height");
+    if (w_attr) w = parse_int_or_percent(w_attr, parent_w);
+    else w = elem->IntAttribute("width", 0);
+    if (h_attr) h = parse_int_or_percent(h_attr, parent_h);
+    else h = elem->IntAttribute("height", 0);
+    if (w > 0) lv_obj_set_width(obj, w);
+    if (h > 0) lv_obj_set_height(obj, h);
+}
+
+// Generalized helper for common widget attributes
+static void apply_common_widget_attributes(lv_obj_t* obj, tinyxml2::XMLElement* elem, lv_obj_t* parent, bool is_label) {
+    int parent_w = lv_obj_get_width(parent);
+    int parent_h = lv_obj_get_height(parent);
+    int w = 0, h = 0;
+    const char* w_attr = elem->Attribute("width");
+    const char* h_attr = elem->Attribute("height");
+    if (w_attr) w = parse_int_or_percent(w_attr, parent_w);
+    else w = elem->IntAttribute("width", 0);
+    if (h_attr) h = parse_int_or_percent(h_attr, parent_h);
+    else h = elem->IntAttribute("height", 0);
+    if (is_label) {
+        // Estimate label size if not specified
+        const char* text = elem->Attribute("text");
+        if (w < 1 && text) {
+            w = lv_font_get_glyph_width(lv_obj_get_style_text_font(parent, LV_PART_MAIN), text[0], 0) * strlen(text) + 8;
+        }
+        if (w < 1) w = 20;
+        if (h < 1) h = 24;
+    }
+    int actual_w = lv_obj_get_width(obj);
+    int actual_h = lv_obj_get_height(obj);
+    set_widget_pos_and_size(obj, elem, parent_w, parent_h, actual_w, actual_h);
+    if (w > 0) lv_obj_set_width(obj, w);
+    if (h > 0) lv_obj_set_height(obj, h);
+    // Color
+    const char* color = elem->Attribute("color");
+    if (color) {
+        uint32_t col = (uint32_t)strtol(color + 1, NULL, 16); // skip '#'
+        if (is_label)
+            lv_obj_set_style_text_color(obj, lv_color_hex(col), LV_PART_MAIN | LV_STATE_DEFAULT);
+        else
+            lv_obj_set_style_bg_color(obj, lv_color_hex(col), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    // Font (for label)
+    if (is_label) {
+        const char* font = elem->Attribute("font");
+        if (font) {
+            if (strcmp(font, "Montserrat_12") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_12, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_14") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_16") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_20") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_24") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_32") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
+            if (strcmp(font, "Montserrat_48") == 0)
+                lv_obj_set_style_text_font(obj, &lv_font_montserrat_48, LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
+    // Alignment (for label)
+    if (is_label) {
+        const char* x_attr = elem->Attribute("x");
+        const char* y_attr = elem->Attribute("y");
+        if (x_attr && strcmp(x_attr, "center") == 0)
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+        if (y_attr && strcmp(y_attr, "center") == 0)
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+}
+
+// ========== Widget Creation Functions ==========
+void create_image(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
+{
+    const char *src = elem->Attribute("src");
+    // Check if file exists in LittleFS
+    String fs_path = String(src);
+    if (fs_path.startsWith("L:/"))
+    {
+        fs_path = fs_path.substring(2); // Remove 'L:' for LittleFS.open
+    }
+    File img_file = LittleFS.open(fs_path.c_str(), "r");
+    if (!img_file)
+    {
+        Serial.print("Image file not found: ");
+        Serial.println(fs_path);
+    }
+    else
+    {
+        Serial.print("Image file found: ");
+        Serial.println(fs_path);
+        img_file.close();
+    }
+    lv_obj_t *img = lv_image_create(parent);
+    lv_image_set_src(img, src ? src : "");
+    apply_common_widget_attributes(img, elem, parent);
+    if (id)
+        widget_map[id] = img;
+}
+
+void create_line(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
+{
+    int parent_w = lv_obj_get_width(parent);
+    int parent_h = lv_obj_get_height(parent);
+    // Support percentage endpoints
+    const char* x1_attr = elem->Attribute("x1");
+    const char* y1_attr = elem->Attribute("y1");
+    const char* x2_attr = elem->Attribute("x2");
+    const char* y2_attr = elem->Attribute("y2");
+    int x1 = x1_attr ? parse_int_or_percent(x1_attr, parent_w) : elem->IntAttribute("x1", 0);
+    int y1 = y1_attr ? parse_int_or_percent(y1_attr, parent_h) : elem->IntAttribute("y1", 0);
+    int x2 = x2_attr ? parse_int_or_percent(x2_attr, parent_w) : elem->IntAttribute("x2", 0);
+    int y2 = y2_attr ? parse_int_or_percent(y2_attr, parent_h) : elem->IntAttribute("y2", 0);
+    lv_obj_t *line = lv_line_create(parent);
+    lv_point_precise_t points[2] = {{x1, y1}, {x2, y2}};
+    lv_line_set_points(line, points, 2);
+    apply_common_widget_attributes(line, elem, parent);
+    int width = elem->IntAttribute("width", 2);
+    lv_obj_set_style_line_width(line, width, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // Color (line-specific)
+    const char *color = elem->Attribute("color");
+    if (color)
+    {
+        uint32_t col = (uint32_t)strtol(color + 1, NULL, 16); // skip '#'
+        lv_obj_set_style_line_color(line, lv_color_hex(col), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    if (id)
+        widget_map[id] = line;
+}
+
+void create_label(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
+{
+    const char *text = elem->Attribute("text");
+    lv_obj_t *label = lv_label_create(parent);
+    lv_label_set_text(label, text ? text : "");
+    apply_common_widget_attributes(label, elem, parent, true);
+    if (id)
+        widget_map[id] = label;
+}
+
+void create_container(XMLElement* elem, lv_obj_t* parent, const char* id) {
+    lv_obj_t* cont = lv_obj_create(parent);
+    apply_common_widget_attributes(cont, elem, parent);
+    const char* bg = elem->Attribute("background");
+    const char* border = elem->Attribute("color");
+    int margin = elem->IntAttribute("margin", 0);
+    int padding = elem->IntAttribute("padding", 0);
+    if (bg) lv_obj_set_style_bg_color(cont, parse_color(bg), LV_PART_MAIN | LV_STATE_DEFAULT);
+    if (border) {
+        lv_obj_set_style_border_color(cont, parse_color(border), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_border_width(cont, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_radius(cont, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    if (margin) lv_obj_set_style_margin_all(cont, margin, LV_PART_MAIN | LV_STATE_DEFAULT);
+    if (padding) lv_obj_set_style_pad_all(cont, padding, LV_PART_MAIN | LV_STATE_DEFAULT);
+    if (id) widget_map[id] = cont;
+
+    // Recursively process children
+    for (XMLElement* child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+        create_widget_from_xml(child, cont);
+    }
+}
+
+void create_widget_from_xml(XMLElement* elem, lv_obj_t* parent) {
+    const char* type = elem->Name();
+    const char* id = elem->Attribute("id");
+    if (strcmp(type, "container") == 0) {
+        create_container(elem, parent, id);
+    } else if (strcmp(type, "label") == 0) {
+        create_label(elem, parent, id);
+    } else if (strcmp(type, "line") == 0) {
+        create_line(elem, parent, id);
+    } else if (strcmp(type, "image") == 0) {
+        create_image(elem, parent, id);
+    }
+}
+
+void load_screen_from_xml(const char* xml_path, lv_obj_t* parent) {
+    // Set background color to black
+    lv_obj_set_style_bg_color(parent, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    File file = LittleFS.open(xml_path, "r");
+    if (!file) {
+        Serial.println("Failed to open XML file");
+        return;
+    }
+    String xmlContent;
+    while (file.available()) {
+        xmlContent += (char)file.read();
+    }
+    file.close();
+
+    XMLDocument doc;
+    if (doc.Parse(xmlContent.c_str()) != XML_SUCCESS) {
+        Serial.println("Failed to parse XML");
+        return;
+    }
+    XMLElement* screen = doc.FirstChildElement("screen");
+    if (!screen) return;
+
+    for (XMLElement* elem = screen->FirstChildElement(); elem; elem = elem->NextSiblingElement()) {
+        create_widget_from_xml(elem, parent);
+    }
+}
+
