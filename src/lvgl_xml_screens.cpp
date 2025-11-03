@@ -193,89 +193,18 @@ static bool equals_ignore_case(const char* a, const char* b) {
 //         lv_obj_set_style_pad_all(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 // }
 
+static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
+{
+
+
+}
+    
+    
+    
 static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
 {
-    // get parent dimensions and position
-    int parent_w = lv_obj_get_width(parent);
-    int parent_h = lv_obj_get_height(parent);
-    int parent_x = lv_obj_get_x(parent);
-    int parent_y = lv_obj_get_y(parent);
-
-    int w = 0, h = 0;
-
-    // get width and height attributes
-    const char *w_attr = elem->Attribute("width");
-    const char *h_attr = elem->Attribute("height");
-
     bool is_label = equals_ignore_case(elem->Name(), "label");
 
-    w = w_attr ? parse_int_or_percent(w_attr, parent_w) : parent_w;
-    h = h_attr ? parse_int_or_percent(h_attr, parent_h) : parent_h;
-  
-    if (is_label)
-    {
-        h = lv_obj_get_style_text_font(obj, LV_PART_MAIN)->line_height;
-    }
-    int actual_w = lv_obj_get_width(obj);
-    int actual_h = lv_obj_get_height(obj);
-
-    // Position
-    int x = 0, y = 0;
-    const char *x_attr = elem->Attribute("x");
-    const char *y_attr = elem->Attribute("y");
-    const char *align = elem->Attribute("align");
-    const char *valign = elem->Attribute("valign");
-    if (x_attr)
-    {
-        if (equals_ignore_case(x_attr, "center"))
-            x = std::max(0, (parent_w - actual_w) / 2);
-        else if (equals_ignore_case(x_attr, "right"))
-            x = std::max(0, parent_w - actual_w);
-        else
-            x = parse_int_or_percent(x_attr, parent_w);
-    }
-    else if (align)
-    {
-        if (equals_ignore_case(align, "center"))
-            x = std::max(0, (parent_w - actual_w) / 2);
-        else if (equals_ignore_case(align, "right"))
-            x = std::max(0, parent_w - actual_w);
-    }
-    if (y_attr)
-    {
-        if (equals_ignore_case(y_attr, "center"))
-            y = std::max(0, (parent_h - actual_h) / 2);
-        else if (equals_ignore_case(y_attr, "bottom"))
-            y = std::max(0, parent_h - actual_h);
-        else
-            y = parse_int_or_percent(y_attr, parent_h);
-    }
-    else if (valign)
-    {
-        if (equals_ignore_case(valign, "center"))
-            y = std::max(0, (parent_h - actual_h) / 2);
-        else if (equals_ignore_case(valign, "bottom"))
-            y = std::max(0, parent_h - actual_h);
-    }
-    lv_obj_set_pos(obj, x, y);
-
-    // Only set width/height if > 0 and do not overwrite a nonzero value with zero
-    if (w > 0 && lv_obj_get_width(obj) != w)
-        lv_obj_set_width(obj, w);
-    if (h > 0 && lv_obj_get_height(obj) != h)
-        lv_obj_set_height(obj, h);
-    
-    
-    
-    Serial.print("[LVGL_XML] Applying attributes to "); Serial.print(elem->Name());
-    Serial.print("  Parent WxH: "); Serial.print(parent_w); Serial.print("x"); Serial.print(parent_h);
-    Serial.print("  Desired WxH: "); Serial.print(w); Serial.print("x"); Serial.print(parent_h);
-    Serial.print("  Widget WxH: "); Serial.print(actual_w); Serial.print("x"); Serial.println(actual_h);
-
-
-    
-    
-    
     // Background color
     const char *background_color = elem->Attribute("background-color");
     if (background_color)
@@ -337,7 +266,7 @@ static void create_label(XMLElement *elem, lv_obj_t *parent, const char *id)
     }
  
     apply_common_widget_attributes(label, elem, parent);
-  
+
     if (id) widget_map[id] = label;
 }
 
@@ -538,5 +467,14 @@ void load_screen_from_xml(const char *xml_path, lv_obj_t *parent)
 
     for (XMLElement *elem = screen->FirstChildElement(); elem; elem = elem->NextSiblingElement()) {
         create_widget_from_xml(elem, parent);
+    }
+
+    // After all widgets are created, traverse and apply layout
+    uint32_t child_cnt = lv_obj_get_child_cnt(parent);
+    XMLElement *elem = screen->FirstChildElement();
+    for (uint32_t i = 0; i < child_cnt && elem; ++i) {
+        lv_obj_t *child_obj = lv_obj_get_child(parent, i);
+        recalculate_layout_tree(child_obj, elem, parent);
+        elem = elem->NextSiblingElement();
     }
 }
