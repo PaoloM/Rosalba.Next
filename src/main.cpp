@@ -9,7 +9,7 @@
 
 Display screen; // Create an instance of the Display class
 
-std::map<std::string, std::string> data_map;
+std::map<std::string, std::string> binding_map;
 std::map<std::string, std::string> fgcolor_map;
 std::map<std::string, std::string> bgcolor_map;
 
@@ -74,12 +74,12 @@ void setup()
 #if BENCH_TESTING == true
   data_map["mode"] = "BENCH";
 #else
-  data_map["mode"] = "ACTIVE";
+  binding_map["mode"] = "ACTIVE";
 #endif
 
-  data_map["rpm"] = "0";
-  data_map["version"] = VERSION;
-  data_map["can"] = LV_SYMBOL_OK;
+  binding_map["rpm"] = "0";
+  binding_map["version"] = VERSION;
+  binding_map["can"] = LV_SYMBOL_OK;
   fgcolor_map["can"] = "#00aa00";
 
   // data_map["can"] = LV_SYMBOL_WARNING;
@@ -142,7 +142,7 @@ void fgcolor_data_binding(const std::string &widget_name, const std::string &val
 void data_binding_update()
 {
   // labels text
-  for (const auto &pair : data_map)
+  for (const auto &pair : binding_map)
   {
     label_data_binding(pair.first, pair.second);
   }

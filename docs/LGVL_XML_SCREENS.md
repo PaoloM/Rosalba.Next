@@ -28,6 +28,7 @@ TBD
 - **padding**: Space inside the widget, in pixels.
 - **align**: Horizontal alignment within parent (`left`, `center`, `right`).
 - **valign**: Vertical alignment within parent (`top`, `middle`, `bottom`).
+- **data-value**: A unique string used for runtime data binding
 
 ### Container Attributes
 
