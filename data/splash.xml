@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen>
-  <label x="center" y="270" width="480" text="Hello, Rosalba!" font="Montserrat_32" color="#ff6600" />
-  <image x="136" y="20" src="L:/abarth_logo.bmp" />
+  <stackpanel orientation="vertical">
+    <label text="Hello, Rosalba!" font="Montserrat_32" color="#ff6600" />
+    <image src="L:/abarth_logo.bmp" />
+  </stackpanel>
 </screen>
