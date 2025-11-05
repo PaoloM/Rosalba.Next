@@ -1,11 +1,13 @@
+
 #include "display.h"
 #include "config.h"
 #include "driver_sdspi.h"
 #include <LittleFS.h>
-#include "lvgl_xml_screens.h"
+#include <lvgl.h>
 #include "Arduino.h"
 #include <map>
 #include <string>
+#include "lvgl_xml_screens.h"
 
 Display screen; // Create an instance of the Display class
 
@@ -167,6 +169,28 @@ void Display::routine()
 
 void loop()
 {
+bool layout_applied = false;
+  static lv_obj_t* root = nullptr;
+  if (!layout_applied) {
+    // Get the root screen object
+    root = lv_scr_act();
+    // Wait until the object tree is built (at least one child)
+    if (lv_obj_get_child_cnt(root) > 0) {
+      lv_task_handler(); // Let LVGL process the tree
+      // Apply layout to all top-level children
+      extern std::map<lv_obj_t*, tinyxml2::XMLElement*> obj_to_elem_map;
+      for (uint32_t i = 0; i < lv_obj_get_child_cnt(root); ++i) {
+        lv_obj_t *child_obj = lv_obj_get_child(root, i);
+        tinyxml2::XMLElement* elem = nullptr;
+        auto it = obj_to_elem_map.find(child_obj);
+        if (it != obj_to_elem_map.end()) elem = it->second;
+        if (elem) // Only call if mapping exists
+          recalculate_layout_tree(child_obj, elem, root);
+      }
+      lv_task_handler(); // Process the new layout
+      layout_applied = true;
+    }
+  }
   data_collection();
   screen.routine(); /* Let the GUI do its work */
   lv_tick_inc(5);   // Call every 5ms (matches your delay)

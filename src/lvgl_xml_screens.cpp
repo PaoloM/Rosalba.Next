@@ -13,18 +13,24 @@ using namespace tinyxml2;
 
 // Widget map for data binding
 std::map<std::string, lv_obj_t *> widget_map;
+extern bool layout_applied;
+// Map LVGL objects to their XML elements for layout
+std::map<lv_obj_t*, tinyxml2::XMLElement*> obj_to_elem_map;
 
 // Font map for labels
-struct FontMap { const char* name; const lv_font_t* ptr; };
-static const FontMap font_map[] = {
-    { "Montserrat_12", &lv_font_montserrat_12 },
-    { "Montserrat_14", &lv_font_montserrat_14 },
-    { "Montserrat_16", &lv_font_montserrat_16 },
-    { "Montserrat_20", &lv_font_montserrat_20 },
-    { "Montserrat_24", &lv_font_montserrat_24 },
-    { "Montserrat_32", &lv_font_montserrat_32 },
-    { "Montserrat_48", &lv_font_montserrat_48 }
+struct FontMap
+{
+    const char *name;
+    const lv_font_t *ptr;
 };
+static const FontMap font_map[] = {
+    {"Montserrat_12", &lv_font_montserrat_12},
+    {"Montserrat_14", &lv_font_montserrat_14},
+    {"Montserrat_16", &lv_font_montserrat_16},
+    {"Montserrat_20", &lv_font_montserrat_20},
+    {"Montserrat_24", &lv_font_montserrat_24},
+    {"Montserrat_32", &lv_font_montserrat_32},
+    {"Montserrat_48", &lv_font_montserrat_48}};
 
 // Helper: parse color string like #RRGGBB
 static lv_color_t parse_color(const char *color)
@@ -54,11 +60,16 @@ static int parse_int_or_percent(const char *value, int parent_size)
 }
 
 // Helper: case-insensitive string compare
-static bool equals_ignore_case(const char* a, const char* b) {
-    if (!a || !b) return false;
-    while (*a && *b) {
-        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return false;
-        ++a; ++b;
+static bool equals_ignore_case(const char *a, const char *b)
+{
+    if (!a || !b)
+        return false;
+    while (*a && *b)
+    {
+        if (tolower((unsigned char)*a) != tolower((unsigned char)*b))
+            return false;
+        ++a;
+        ++b;
     }
     return *a == *b;
 }
@@ -202,9 +213,10 @@ static void set_widget_geometry(lv_obj_t *obj, int x, int y, int w, int h)
         lv_obj_set_height(obj, h);
 }
 
-static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
+void recalculate_layout_tree(lv_obj_t *obj, tinyxml2::XMLElement *elem, lv_obj_t *parent)
 {
-    Serial.print("recalculate_layout_tree: type="); Serial.println(elem->Name());
+    if (!elem) return;
+         if (!elem) return;
 
     int x = 0, y = 0, w = 0, h = 0;
 
@@ -221,90 +233,103 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
     const char *w_attr = elem->Attribute("width");
     const char *h_attr = elem->Attribute("height");
 
-    // Robust x calculation
-    if (x_attr) {
-        x = parse_int_or_percent(x_attr, parent_w);
-    }
-    // Robust y calculation
-    if (y_attr) {
-        y = parse_int_or_percent(y_attr, parent_h);
-    }
+    w = parse_int_or_percent(w_attr, parent_w); // Robust width calculation
+    h = parse_int_or_percent(h_attr, parent_h); // Robust height calculation
+    if (x_attr) x = parse_int_or_percent(x_attr, parent_w); // Robust x calculation
+    if (y_attr) y = parse_int_or_percent(y_attr, parent_h); // Robust y calculation
 
-    // Robust width calculation
-    if (w_attr) {
-        w = parse_int_or_percent(w_attr, parent_w);
-    } else { // if no width specified, assume 100% of the parent
-        w = parent_w;
-    }
-    // Robust height calculation
-    if (h_attr) {
-        h = parse_int_or_percent(h_attr, parent_h);
-    } else {
-        h = parent_h; // if no height specified, assume 100% of the parent
-    }
-
-    if (equals_ignore_case(type, "stackpanel")) {
-        set_widget_geometry(obj, x + parent_x, y + parent_y, w, h); // set panel geometry
+    if (equals_ignore_case(type, "stackpanel"))
+    {
+        set_widget_geometry(obj, x + parent_x, y + parent_y, w, h); // set panel geometry first
         const char *orientation = elem->Attribute("orientation");
-            Serial.print("Stackpanel orientation: "); Serial.println(orientation ? orientation : "(null)");
-        if (orientation && equals_ignore_case(orientation, "vertical")) {
-            Serial.println("Vertical stackpanel layout triggered");
+        if (!orientation || equals_ignore_case(orientation, "vertical")) // if no orientation, default to vertical
+        {
             int y_offset = 0;
             int child_idx = 0;
-            for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
-                Serial.print("traversing child elements: type="); Serial.println(child->Name());
+            for (tinyxml2::XMLElement *child = elem ? elem->FirstChildElement() : nullptr; child; child = child->NextSiblingElement(), ++child_idx)
+            {
                 lv_obj_t *child_obj = lv_obj_get_child(obj, child_idx);
                 int child_h = 0;
                 const char *child_h_attr = child->Attribute("height");
                 if (child_h_attr)
+                {
                     child_h = parse_int_or_percent(child_h_attr, h);
+                }
+                else if (equals_ignore_case(child->Name(), "label"))
+                {
+                    // Calculate label height from text and font
+                    const char *text = child->Attribute("text");
+                    if (!text)
+                        text = "";
+                    const lv_font_t *font = lv_obj_get_style_text_font(child_obj, LV_PART_MAIN);
+                    if (!font)
+                        font = LV_FONT_DEFAULT;
+                    lv_point_t size;
+                    lv_txt_get_size(&size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+                    child_h = size.y + 8; // add some padding
+                }
                 else
+                {
                     child_h = h; // fallback to panel height
+                }
+                // show the child geometry
+                const char *cid = child->Attribute("id");
+                printf("Child '%s' geometry (set): x=%d, y=%d, width=%d, height=%d\n",
+                       cid ? cid : "", x + parent_x, y + parent_y + y_offset, w, child_h);
                 set_widget_geometry(child_obj, x + parent_x, y + parent_y + y_offset, w, child_h);
+                printf("Child '%s' geometry (get): x=%d, y=%d, width=%d, height=%d\n",
+                       cid ? cid : "", lv_obj_get_x(child_obj), lv_obj_get_y(child_obj),
+                       lv_obj_get_width(child_obj), lv_obj_get_height(child_obj));
+                recalculate_layout_tree(child_obj, child, obj); // recurse into child
                 y_offset += child_h;
             }
         }
-        if (orientation && equals_ignore_case(orientation, "horizontal")) {
-            Serial.println("Horizontal stackpanel layout triggered");
+        if (equals_ignore_case(orientation, "horizontal"))
+        {
             int x_offset = 0; // Only initialize once per container
             int child_idx = 0;
-            for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
-                Serial.print("traversing child elements: type="); Serial.println(child->Name());
+            for (tinyxml2::XMLElement *child = elem ? elem->FirstChildElement() : nullptr; child; child = child->NextSiblingElement(), ++child_idx)
+            {
                 lv_obj_t *child_obj = lv_obj_get_child(obj, child_idx);
                 int child_w = 0;
                 const char *child_w_attr = child->Attribute("width");
-                if (child_w_attr) {
+                if (child_w_attr)
+                {
                     child_w = parse_int_or_percent(child_w_attr, w);
-                } else if (equals_ignore_case(child->Name(), "label")) {
+                }
+                else if (equals_ignore_case(child->Name(), "label"))
+                {
                     // Calculate label width from text and font
                     const char *text = child->Attribute("text");
-                    if (!text) text = "";
+                    if (!text)
+                        text = "";
                     const lv_font_t *font = lv_obj_get_style_text_font(child_obj, LV_PART_MAIN);
-                    if (!font) font = LV_FONT_DEFAULT;
+                    if (!font)
+                        font = LV_FONT_DEFAULT;
                     lv_point_t size;
                     lv_txt_get_size(&size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
                     child_w = size.x + 8; // add some padding
-                    Serial.println(String("Calculated label width: ") + child_w + " for text: " + text);
-                } else {
+                }
+                else
+                {
                     child_w = w; // fallback to panel width
                 }
-                Serial.print("Setting geometry for child "); Serial.print(child_idx); Serial.print(" x="); Serial.print(x + parent_x + x_offset); Serial.print(" w="); Serial.println(child_w);
                 set_widget_geometry(child_obj, x + parent_x + x_offset, y + parent_y, child_w, h);
-                Serial.print("x_offset before increment: "); Serial.println(x_offset);
+                recalculate_layout_tree(child_obj, child, obj); // recurse into child
                 x_offset += child_w; // Accumulate offset for next child
-                Serial.print("x_offset after increment: "); Serial.println(x_offset);
             }
         }
-    } else if (equals_ignore_case(type, "panel")) {
-        set_widget_geometry(obj, x + parent_x, y + parent_y, w, h);
-    } else {
+    }
+    else if (equals_ignore_case(type, "panel"))
+    {
         set_widget_geometry(obj, x + parent_x, y + parent_y, w, h);
     }
-
+    else
+    {
+        set_widget_geometry(obj, x + parent_x, y + parent_y, w, h);
+    }
 }
-    
-    
-    
+
 static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
 {
     bool is_label = equals_ignore_case(elem->Name(), "label");
@@ -316,10 +341,14 @@ static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_o
 
     // Text or Stroke color
     const char *color = elem->Attribute("color");
-    if (color) {
-        if (is_label) {
+    if (color)
+    {
+        if (is_label)
+        {
             lv_obj_set_style_text_color(obj, parse_color(color), LV_PART_MAIN | LV_STATE_DEFAULT);
-        } else {
+        }
+        else
+        {
             // For lines, circles, etc: use as stroke color
             lv_obj_set_style_border_color(obj, parse_color(color), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_line_color(obj, parse_color(color), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -332,11 +361,11 @@ static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_o
         lv_obj_set_style_border_width(obj, border, LV_PART_MAIN | LV_STATE_DEFAULT);
     else
         lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+
     const char *border_color = elem->Attribute("border-color");
     if (border_color)
         lv_obj_set_style_border_color(obj, parse_color(border_color), LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+
     // Margin & Padding (in integer pixels only)
     int margin = elem->IntAttribute("margin", -1);
     int padding = elem->IntAttribute("padding", -1);
@@ -359,19 +388,23 @@ static void create_label(XMLElement *elem, lv_obj_t *parent, const char *id)
     const char *text = elem->Attribute("text"); // get text attribute
     lv_label_set_text(label, text ? text : "");
 
-    const char* font = elem->Attribute("font"); // get font attribute
-    if (font) {
-        for (const auto& entry : font_map) {
-            if (equals_ignore_case(font, entry.name)) {
+    const char *font = elem->Attribute("font"); // get font attribute
+    if (font)
+    {
+        for (const auto &entry : font_map)
+        {
+            if (equals_ignore_case(font, entry.name))
+            {
                 lv_obj_set_style_text_font(label, entry.ptr, LV_PART_MAIN | LV_STATE_DEFAULT);
                 break;
             }
         }
     }
- 
+
     apply_common_widget_attributes(label, elem, parent); // apply common attributes
 
-    if (id) widget_map[id] = label; // store in widget map if id is present
+    if (id)
+        widget_map[id] = label; // store in widget map if id is present
 }
 
 static void create_line(XMLElement *elem, lv_obj_t *parent, const char *id)
@@ -387,13 +420,14 @@ static void create_line(XMLElement *elem, lv_obj_t *parent, const char *id)
     lv_obj_t *line = lv_line_create(parent);
     lv_point_precise_t points[2] = {{x1, y1}, {x2, y2}};
     lv_line_set_points(line, points, 2);
-    
+
     int stroke = elem->IntAttribute("stroke", 2);
     lv_obj_set_style_line_width(line, stroke, LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+
     apply_common_widget_attributes(line, elem, parent);
-    
-    if (id) widget_map[id] = line;
+
+    if (id)
+        widget_map[id] = line;
 }
 
 static void create_image(XMLElement *elem, lv_obj_t *parent, const char *id)
@@ -402,31 +436,33 @@ static void create_image(XMLElement *elem, lv_obj_t *parent, const char *id)
 
     lv_obj_t *img = lv_image_create(parent);
     lv_image_set_src(img, src ? src : "");
-    
+
     apply_common_widget_attributes(img, elem, parent);
-    
-    if (id) widget_map[id] = img;
+
+    if (id)
+        widget_map[id] = img;
 }
 
 static void create_circle(XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     lv_obj_t *circle = lv_obj_create(parent); // create circle object
-    
+
     int radius = elem->IntAttribute("radius"); // get radius attribute (pixels only)
     if (radius > 0)
         lv_obj_set_style_radius(circle, radius, LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+
     const char *fill_color = elem->Attribute("fill-color"); // get fill color attribute
     if (fill_color)
         lv_obj_set_style_bg_color(circle, parse_color(fill_color), LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+
     int stroke = elem->IntAttribute("stroke", 0); // get stroke width
     if (stroke)
         lv_obj_set_style_border_width(circle, stroke, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     apply_common_widget_attributes(circle, elem, parent); // apply common attributes
 
-    if (id) widget_map[id] = circle; // store in widget map if id is present
+    if (id)
+        widget_map[id] = circle; // store in widget map if id is present
 }
 
 // ========== Containers creation functions
@@ -438,15 +474,17 @@ static void create_stackpanel(XMLElement *elem, lv_obj_t *parent, const char *id
     const char *orientation = elem->Attribute("orientation"); // get orientation attribute
 
     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT); // no round corners
-    
-    // Create children 
-    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+
+    // Create children
+    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement())
+    {
         create_widget_from_xml(child, panel);
     }
 
     apply_common_widget_attributes(panel, elem, parent); // apply common attributes
-    
-    if (id) widget_map[id] = panel; // store in widget map if id is present
+
+    if (id)
+        widget_map[id] = panel; // store in widget map if id is present
 }
 
 static void create_panel(XMLElement *elem, lv_obj_t *parent, const char *id)
@@ -454,15 +492,17 @@ static void create_panel(XMLElement *elem, lv_obj_t *parent, const char *id)
     lv_obj_t *panel = lv_obj_create(parent); // create panel object
 
     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT); // no round corners
-    
-    // Create children 
-    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+
+    // Create children
+    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement())
+    {
         create_widget_from_xml(child, panel);
     }
-    
+
     apply_common_widget_attributes(panel, elem, parent); // apply common attributes
-    
-    if (id) widget_map[id] = panel; // store in widget map if id is present
+
+    if (id)
+        widget_map[id] = panel; // store in widget map if id is present
 }
 
 void create_widget_from_xml(XMLElement *elem, lv_obj_t *parent)
@@ -507,70 +547,81 @@ void create_widget_from_xml(XMLElement *elem, lv_obj_t *parent)
     //     }
     //     // ...existing code...
     // }
-    // else 
+    // else
+    lv_obj_t* created = nullptr;
     if (equals_ignore_case(type, "stackpanel"))
     {
         create_stackpanel(elem, parent, id);
+        // The last child of parent is the new panel
+        created = lv_obj_get_child(parent, lv_obj_get_child_cnt(parent) - 1);
     }
     else if (equals_ignore_case(type, "label"))
     {
         create_label(elem, parent, id);
+        created = lv_obj_get_child(parent, lv_obj_get_child_cnt(parent) - 1);
     }
     else if (equals_ignore_case(type, "line"))
     {
         create_line(elem, parent, id);
+        created = lv_obj_get_child(parent, lv_obj_get_child_cnt(parent) - 1);
     }
     else if (equals_ignore_case(type, "image"))
     {
         create_image(elem, parent, id);
+        created = lv_obj_get_child(parent, lv_obj_get_child_cnt(parent) - 1);
     }
     else if (equals_ignore_case(type, "circle"))
     {
         create_circle(elem, parent, id);
+        created = lv_obj_get_child(parent, lv_obj_get_child_cnt(parent) - 1);
+    }
+    if (created && elem) {
+        obj_to_elem_map[created] = elem;
     }
 }
 
 void load_screen_from_xml(const char *xml_path, lv_obj_t *parent)
 {
-    if (!parent) parent = lv_scr_act();
+    layout_applied = false;
+
+    if (!parent)
+        parent = lv_scr_act();
     lv_obj_set_style_bg_color(parent, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT); // set screen to black background
-    widget_map.clear(); 
+    widget_map.clear();
 
     File file = LittleFS.open(xml_path, "r");
-    if (!file) {
+    if (!file)
+    {
         Serial.println("[LVGL_XML] ERROR: XML file not found!");
         return;
     }
-    
+
     String xmlContent;
     while (file.available())
         xmlContent += (char)file.read();
     file.close();
-    
+
     XMLDocument doc;
-    if (doc.Parse(xmlContent.c_str()) != XML_SUCCESS) {
+    if (doc.Parse(xmlContent.c_str()) != XML_SUCCESS)
+    {
         Serial.println("[LVGL_XML] ERROR: XML parse failed!");
         return;
     }
-    
+
     // The top level element should be <screen>
-    XMLElement *screen = doc.FirstChildElement("screen");
-    if (!screen) {
+    tinyxml2::XMLElement *screen = doc.FirstChildElement("screen");
+    if (!screen)
+    {
         Serial.println("[LVGL_XML] ERROR: <screen> element not found!");
         return;
     }
 
     // There might be multiple top-level widgets, so traverse all
-    for (XMLElement *elem = screen->FirstChildElement(); elem; elem = elem->NextSiblingElement()) {
+    for (tinyxml2::XMLElement *elem = screen->FirstChildElement(); elem; elem = elem->NextSiblingElement())
+    {
         create_widget_from_xml(elem, parent);
     }
 
-    // After all widgets are created, traverse and apply layout
-    uint32_t child_cnt = lv_obj_get_child_cnt(parent);
-    XMLElement *elem = screen->FirstChildElement();
-    for (uint32_t i = 0; i < child_cnt && elem; ++i) {
-        lv_obj_t *child_obj = lv_obj_get_child(parent, i);
-        recalculate_layout_tree(child_obj, elem, parent);
-        elem = elem->NextSiblingElement();
-    }
+    // Layout is now the caller's responsibility, after lv_task_handler() in the main loop.
+    layout_applied = true;
 }
