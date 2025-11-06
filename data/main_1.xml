@@ -7,23 +7,11 @@
         <stackpanel orientation="horizontal" height="30" background-color="#990000" id="header">
 
             <label text="Rosalba.Next v" font="Montserrat_16" color="#ffffff" />
-            <label text="-.-" font="Montserrat_16" color="#ffffff" data-value="version" />
+            <label text="*.*" font="Montserrat_16" color="#ffffff" data-value="version" />
 
         </stackpanel>
 
-        <!-- Main (height should be 'auto' to fit content) -->
-        <stackpanel orientation="horizontal" height="260" background-color="#999900" id="main">
 
-            <label text="Main" font="Montserrat_16" color="#ffffff" />
-
-        </stackpanel>
-
-        <!-- Footer -->
-        <stackpanel orientation="horizontal" height="30" background-color="#666600" id="footer">
-
-            <label text="Footer" font="Montserrat_16" color="#ffffff" />
-
-        </stackpanel>
 
     </stackpanel> <!-- Main Panel -->
 

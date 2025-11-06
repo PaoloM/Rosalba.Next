@@ -1,4 +1,5 @@
 #include <cctype>
+#include <tinyxml2.h>
 
 #include "lvgl_xml_screens.h"
 #include <lvgl.h>
@@ -6,10 +7,16 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
-#include <tinyxml2.h>
 #include <Arduino.h>
 #include <LittleFS.h>
-using namespace tinyxml2;
+
+
+// Global XML document and root element for layout
+tinyxml2::XMLDocument* g_screen_xml_doc = nullptr;
+tinyxml2::XMLElement* g_screen_xml_root = nullptr;
+
+
+bool execute_layout = false;
 
 // Widget map for data binding
 std::map<std::string, lv_obj_t *> widget_map;
@@ -65,7 +72,7 @@ static bool equals_ignore_case(const char* a, const char* b) {
 
 // Common attributes
 
-// static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent, bool is_label = false)
+// static void apply_common_widget_attributes(lv_obj_t *obj, tinyxml2::XMLElement *elem, lv_obj_t *parent, bool is_label = false)
 // {
 //     int parent_w = lv_obj_get_width(parent);
 //     int parent_h = lv_obj_get_height(parent);
@@ -202,7 +209,7 @@ static void set_widget_geometry(lv_obj_t *obj, int x, int y, int w, int h)
         lv_obj_set_height(obj, h);
 }
 
-static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
+void recalculate_layout_tree(lv_obj_t *obj, tinyxml2::XMLElement *elem, lv_obj_t *parent)
 {
     Serial.print("recalculate_layout_tree: type="); Serial.println(elem->Name());
 
@@ -251,7 +258,7 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
             Serial.println("Vertical stackpanel layout triggered");
             int y_offset = 0;
             int child_idx = 0;
-            for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
+            for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
                 Serial.print("traversing child elements: type="); Serial.println(child->Name());
                 lv_obj_t *child_obj = lv_obj_get_child(obj, child_idx);
                 int child_h = 0;
@@ -261,6 +268,8 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
                 else
                     child_h = h; // fallback to panel height
                 set_widget_geometry(child_obj, x + parent_x, y + parent_y + y_offset, w, child_h);
+                recalculate_layout_tree(child_obj, child, obj); // Recurse into child
+                Serial.print("y_offset before increment: "); Serial.println(y_offset);
                 y_offset += child_h;
             }
         }
@@ -268,7 +277,7 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
             Serial.println("Horizontal stackpanel layout triggered");
             int x_offset = 0; // Only initialize once per container
             int child_idx = 0;
-            for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
+            for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement(), ++child_idx) {
                 Serial.print("traversing child elements: type="); Serial.println(child->Name());
                 lv_obj_t *child_obj = lv_obj_get_child(obj, child_idx);
                 int child_w = 0;
@@ -290,6 +299,7 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
                 }
                 Serial.print("Setting geometry for child "); Serial.print(child_idx); Serial.print(" x="); Serial.print(x + parent_x + x_offset); Serial.print(" w="); Serial.println(child_w);
                 set_widget_geometry(child_obj, x + parent_x + x_offset, y + parent_y, child_w, h);
+                recalculate_layout_tree(child_obj, child, obj); // Recurse into child
                 Serial.print("x_offset before increment: "); Serial.println(x_offset);
                 x_offset += child_w; // Accumulate offset for next child
                 Serial.print("x_offset after increment: "); Serial.println(x_offset);
@@ -305,7 +315,7 @@ static void recalculate_layout_tree(lv_obj_t *obj, XMLElement *elem, lv_obj_t *p
     
     
     
-static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_obj_t *parent)
+static void apply_common_widget_attributes(lv_obj_t *obj, tinyxml2::XMLElement *elem, lv_obj_t *parent)
 {
     bool is_label = equals_ignore_case(elem->Name(), "label");
 
@@ -352,9 +362,11 @@ static void apply_common_widget_attributes(lv_obj_t *obj, XMLElement *elem, lv_o
 
 // ========== Widget creation functions
 
-static void create_label(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_label(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     lv_obj_t *label = lv_label_create(parent); // create label object
+    lv_obj_set_layout(label, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(label, LV_OBJ_FLAG_SCROLLABLE);
 
     const char *text = elem->Attribute("text"); // get text attribute
     lv_label_set_text(label, text ? text : "");
@@ -374,7 +386,7 @@ static void create_label(XMLElement *elem, lv_obj_t *parent, const char *id)
     if (id) widget_map[id] = label; // store in widget map if id is present
 }
 
-static void create_line(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_line(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     // TODO: need to figure out the geometry here
     int parent_w = lv_obj_get_width(parent);
@@ -385,6 +397,8 @@ static void create_line(XMLElement *elem, lv_obj_t *parent, const char *id)
     int y2 = parse_int_or_percent(elem->Attribute("y2"), parent_h);
 
     lv_obj_t *line = lv_line_create(parent);
+    lv_obj_set_layout(line, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(line, LV_OBJ_FLAG_SCROLLABLE);
     lv_point_precise_t points[2] = {{x1, y1}, {x2, y2}};
     lv_line_set_points(line, points, 2);
     
@@ -396,11 +410,13 @@ static void create_line(XMLElement *elem, lv_obj_t *parent, const char *id)
     if (id) widget_map[id] = line;
 }
 
-static void create_image(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_image(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     const char *src = elem->Attribute("src");
 
     lv_obj_t *img = lv_image_create(parent);
+    lv_obj_set_layout(img, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(img, LV_OBJ_FLAG_SCROLLABLE);
     lv_image_set_src(img, src ? src : "");
     
     apply_common_widget_attributes(img, elem, parent);
@@ -408,10 +424,13 @@ static void create_image(XMLElement *elem, lv_obj_t *parent, const char *id)
     if (id) widget_map[id] = img;
 }
 
-static void create_circle(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_circle(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
-    lv_obj_t *circle = lv_obj_create(parent); // create circle object
-    
+    lv_obj_t *circle = lv_obj_create(parent);
+    lv_obj_set_layout(circle, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_radius(circle, 0, LV_PART_MAIN | LV_STATE_DEFAULT); // no round corners
+
     int radius = elem->IntAttribute("radius"); // get radius attribute (pixels only)
     if (radius > 0)
         lv_obj_set_style_radius(circle, radius, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -431,41 +450,42 @@ static void create_circle(XMLElement *elem, lv_obj_t *parent, const char *id)
 
 // ========== Containers creation functions
 
-static void create_stackpanel(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_stackpanel(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     lv_obj_t *panel = lv_obj_create(parent); // create panel object
+
+    // Ensure manual positioning works
+    lv_obj_set_layout(panel, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
 
     const char *orientation = elem->Attribute("orientation"); // get orientation attribute
-
     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT); // no round corners
-    
     // Create children 
-    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+    for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
         create_widget_from_xml(child, panel);
     }
-
     apply_common_widget_attributes(panel, elem, parent); // apply common attributes
-    
     if (id) widget_map[id] = panel; // store in widget map if id is present
 }
 
-static void create_panel(XMLElement *elem, lv_obj_t *parent, const char *id)
+static void create_panel(tinyxml2::XMLElement *elem, lv_obj_t *parent, const char *id)
 {
     lv_obj_t *panel = lv_obj_create(parent); // create panel object
 
+    // Ensure manual positioning works
+    lv_obj_set_layout(panel, LV_LAYOUT_NONE);
+    lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+
     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT); // no round corners
-    
     // Create children 
-    for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+    for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
         create_widget_from_xml(child, panel);
     }
-    
     apply_common_widget_attributes(panel, elem, parent); // apply common attributes
-    
     if (id) widget_map[id] = panel; // store in widget map if id is present
 }
 
-void create_widget_from_xml(XMLElement *elem, lv_obj_t *parent)
+void create_widget_from_xml(tinyxml2::XMLElement *elem, lv_obj_t *parent)
 {
     const char *type = elem->Name();
     const char *id = elem->Attribute("id");
@@ -493,12 +513,12 @@ void create_widget_from_xml(XMLElement *elem, lv_obj_t *parent)
     //     if (id)
     //         widget_map[id] = cont;
     //     // Create children
-    //     for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement())
+    //     for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement())
     //     {
     //         create_widget_from_xml(child, cont);
     //     }
     //     // Re-apply attributes to children after parent is sized
-    //     for (XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
+    //     for (tinyxml2::XMLElement *child = elem->FirstChildElement(); child; child = child->NextSiblingElement()) {
     //         const char *child_id = child->Attribute("id");
     //         lv_obj_t *child_obj = nullptr;
     //         if (child_id && widget_map.count(child_id)) child_obj = widget_map[child_id];
@@ -532,6 +552,8 @@ void create_widget_from_xml(XMLElement *elem, lv_obj_t *parent)
 
 void load_screen_from_xml(const char *xml_path, lv_obj_t *parent)
 {
+    execute_layout = false; // reset layout flag
+
     if (!parent) parent = lv_scr_act();
     lv_obj_set_style_bg_color(parent, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT); // set screen to black background
     widget_map.clear(); 
@@ -541,36 +563,36 @@ void load_screen_from_xml(const char *xml_path, lv_obj_t *parent)
         Serial.println("[LVGL_XML] ERROR: XML file not found!");
         return;
     }
-    
     String xmlContent;
     while (file.available())
         xmlContent += (char)file.read();
     file.close();
-    
-    XMLDocument doc;
-    if (doc.Parse(xmlContent.c_str()) != XML_SUCCESS) {
-        Serial.println("[LVGL_XML] ERROR: XML parse failed!");
-        return;
-    }
-    
-    // The top level element should be <screen>
-    XMLElement *screen = doc.FirstChildElement("screen");
-    if (!screen) {
-        Serial.println("[LVGL_XML] ERROR: <screen> element not found!");
-        return;
-    }
 
+    // Free previous doc if any
+    if (g_screen_xml_doc) {
+        delete g_screen_xml_doc;
+        g_screen_xml_doc = nullptr;
+        g_screen_xml_root = nullptr;
+    }
+    g_screen_xml_doc = new tinyxml2::XMLDocument();
+    if (g_screen_xml_doc->Parse(xmlContent.c_str()) != tinyxml2::XML_SUCCESS) {
+        Serial.println("[LVGL_XML] ERROR: XML parse failed!");
+        delete g_screen_xml_doc;
+        g_screen_xml_doc = nullptr;
+        g_screen_xml_root = nullptr;
+        return;
+    }
+    g_screen_xml_root = g_screen_xml_doc->FirstChildElement("screen");
+    if (!g_screen_xml_root) {
+        Serial.println("[LVGL_XML] ERROR: <screen> element not found!");
+        delete g_screen_xml_doc;
+        g_screen_xml_doc = nullptr;
+        g_screen_xml_root = nullptr;
+        return;
+    }
     // There might be multiple top-level widgets, so traverse all
-    for (XMLElement *elem = screen->FirstChildElement(); elem; elem = elem->NextSiblingElement()) {
+    for (tinyxml2::XMLElement *elem = g_screen_xml_root->FirstChildElement(); elem; elem = elem->NextSiblingElement()) {
         create_widget_from_xml(elem, parent);
     }
-
-    // After all widgets are created, traverse and apply layout
-    uint32_t child_cnt = lv_obj_get_child_cnt(parent);
-    XMLElement *elem = screen->FirstChildElement();
-    for (uint32_t i = 0; i < child_cnt && elem; ++i) {
-        lv_obj_t *child_obj = lv_obj_get_child(parent, i);
-        recalculate_layout_tree(child_obj, elem, parent);
-        elem = elem->NextSiblingElement();
-    }
+    execute_layout = true; // enable layout execution in loop()
 }

@@ -13,6 +13,8 @@ std::map<std::string, std::string> binding_map;
 std::map<std::string, std::string> fgcolor_map;
 std::map<std::string, std::string> bgcolor_map;
 
+extern bool execute_layout;
+
 int simulated_rpm = 0;
 
 void show_splash_then_vehicle()
@@ -167,6 +169,23 @@ void Display::routine()
 
 void loop()
 {
+  if (execute_layout)
+  {
+    lv_task_handler(); // Handle LVGL tasks before layout
+    extern tinyxml2::XMLElement* g_screen_xml_root;
+    lv_obj_t *parent = lv_scr_act();
+    if (g_screen_xml_root && parent) {
+        uint32_t child_cnt = lv_obj_get_child_cnt(parent);
+        tinyxml2::XMLElement *elem = g_screen_xml_root->FirstChildElement();
+        for (uint32_t i = 0; i < child_cnt && elem; ++i) {
+            lv_obj_t *child_obj = lv_obj_get_child(parent, i);
+            recalculate_layout_tree(child_obj, elem, parent);
+            elem = elem->NextSiblingElement();
+        }
+    }
+    lv_task_handler(); // Handle LVGL tasks after layout
+    execute_layout = false;
+  }
   data_collection();
   screen.routine(); /* Let the GUI do its work */
   lv_tick_inc(5);   // Call every 5ms (matches your delay)
