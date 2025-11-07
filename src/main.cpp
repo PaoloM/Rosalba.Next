@@ -1,13 +1,12 @@
 
-#include "display.h"
 #include "config.h"
-#include "driver_sdspi.h"
 #include <LittleFS.h>
 #include <lvgl.h>
 #include "Arduino.h"
 #include <map>
 #include <string>
 #include "lvgl_xml_screens.h"
+#include <waveshare_lcd_port.h>
 
 Display screen; // Create an instance of the Display class
 
@@ -49,8 +48,7 @@ void setup()
   Serial.println("=== ROSALBA.NEXT ===");
 
   /*** Init drivers ***/
-
-  screen.init();
+  waveshare_lcd_init(); // Initialize the RGB LCD
   Serial.println("Display initialized");
 
   Serial.print("Mounting LittleFS... ");
@@ -156,16 +154,16 @@ void data_binding_update()
   }
 }
 
-void Display::routine()
-{
-  static uint32_t last_update = 0;
-  uint32_t now = lv_tick_get();
-  if (now - last_update >= SCREEN_REFRESH_INTERVAL_MS) // Update every 100ms
-  {
-    last_update = now;
-    data_binding_update();
-  }
-}
+// void Display::routine()
+// {
+//   static uint32_t last_update = 0;
+//   uint32_t now = lv_tick_get();
+//   if (now - last_update >= SCREEN_REFRESH_INTERVAL_MS) // Update every 100ms
+//   {
+//     last_update = now;
+//     data_binding_update();
+//   }
+// }
 
 void loop()
 {
@@ -192,7 +190,7 @@ bool layout_applied = false;
     }
   }
   data_collection();
-  screen.routine(); /* Let the GUI do its work */
+//  screen.routine(); /* Let the GUI do its work */
   lv_tick_inc(5);   // Call every 5ms (matches your delay)
   lv_timer_handler();
   delay(5); /* Small delay to prevent excessive CPU usage */
